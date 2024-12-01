@@ -10,6 +10,12 @@ fn solve(input: []const u8, allocator: std.mem.Allocator) !void {
     var right = std.ArrayList(i32).init(allocator);
     defer right.deinit();
 
+    var similarityLookup = std.AutoHashMap(i32, i32).init(allocator);
+    defer similarityLookup.deinit();
+
+    var existenceLookup = std.AutoHashMap(i32, i32).init(allocator);
+    defer existenceLookup.deinit();
+
     while (lines.next()) |x| {
         if (std.mem.eql(u8, x, "")) {
             continue;
@@ -22,6 +28,14 @@ fn solve(input: []const u8, allocator: std.mem.Allocator) !void {
 
         try left.append(line.left);
         try right.append(line.right);
+
+        // ensure entry from the left
+
+        const seen = similarityLookup.get(line.right);
+        try similarityLookup.put(line.right, (seen orelse 0) + 1);
+
+        const count = existenceLookup.get(line.left);
+        try existenceLookup.put(line.left, (count orelse 0) + 1);
     }
 
     const leftSlice = try left.toOwnedSlice();
@@ -36,7 +50,20 @@ fn solve(input: []const u8, allocator: std.mem.Allocator) !void {
         sum += @abs(r - l);
     }
 
-    std.debug.print("Solution is: {d}", .{sum});
+    var it = similarityLookup.iterator();
+    var similarityScore: i32 = 0;
+    std.debug.print("Calculating Similarity: \n", .{});
+    while (it.next()) |item| {
+        const key = item.key_ptr.*;
+
+        const hitCount = existenceLookup.get(key) orelse continue;
+
+        similarityScore += key * item.value_ptr.* * hitCount;
+        std.debug.print("\tK: {d}, V: {d}, HC: {d}\n", .{ item.key_ptr.*, item.value_ptr.*, hitCount });
+    }
+
+    std.debug.print("Solution is: {d}\n", .{sum});
+    std.debug.print("Similarity is: {d}\n", .{similarityScore});
 }
 
 const Line = struct {
