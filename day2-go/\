@@ -1,0 +1,92 @@
+package main
+
+import (
+	_ "embed"
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+)
+
+//go:embed simple.txt
+var simple string
+
+const (
+	Direction_Unknown = iota
+	Direction_Asc     = iota
+	Direction_Desc    = iota
+)
+
+func main() {
+
+	input := simple
+	validCount := 0
+	for _, row := range strings.Split(input, "\n") {
+		isValid := true
+		isInOrder := true
+		if row == "" {
+			continue
+		}
+
+		direction := Direction_Unknown
+
+		cols := strings.Split(row, " ")
+		fmt.Printf("Processing Row %s\n", row)
+		for i, currentElRaw := range cols {
+			currentEl, err := strconv.Atoi(currentElRaw)
+			if err != nil {
+				panic(err)
+			}
+			nextEl, err := strconv.Atoi(cols[min(len(cols)-1, i+1)])
+			if err != nil {
+				panic(err)
+			}
+			prevEl, err := strconv.Atoi(cols[max(0, i-1)])
+			if err != nil {
+				panic(err)
+			}
+
+			switch direction {
+			case Direction_Unknown:
+				if nextEl >= currentEl {
+					direction = Direction_Asc
+				} else {
+					direction = Direction_Desc
+				}
+				break
+			case Direction_Asc:
+				if nextEl <= currentEl {
+					isInOrder = false
+					fmt.Println("\t- Not in Order")
+					continue
+				}
+				break
+			case Direction_Desc:
+				if nextEl >= currentEl {
+					isInOrder = false
+					fmt.Println("\t- Not in Order")
+					continue
+				}
+				break
+			}
+
+			distancePrev := math.Abs(float64(currentEl) - float64(prevEl))
+			distanceNext := math.Abs(float64(currentEl) - float64(nextEl))
+
+			fmt.Printf("\tDistancePrev is valid: %v\n", isValidDistance(distancePrev))
+			fmt.Printf("\tDistanceNext is valid: %v\n", isValidDistance(distanceNext))
+			isValid = isValidDistance(distancePrev) && isValidDistance(distanceNext) && isInOrder
+		}
+
+		if isValid {
+			validCount++
+		}
+
+	}
+
+	fmt.Printf("\nValidCount: %d\n", validCount)
+}
+
+func isValidDistance(distance float64) bool {
+	return distance >= 1 && distance <= 3
+}
